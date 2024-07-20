@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request
 from datetime import datetime
-_test = False
+_test = True
 if not _test:
     import use_rover
 
