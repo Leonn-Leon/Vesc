@@ -22,7 +22,10 @@ class DepthCamera:
         self.pipeline.start(config)
 
     def get_frame(self):
-        frames = self.pipeline.wait_for_frames()
+        try:
+            frames = self.pipeline.wait_for_frames()
+        except:
+            frames = self.pipeline.poll_for_frames()
         depth_frame = frames.get_depth_frame()
         color_frame = frames.get_color_frame()
 

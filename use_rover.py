@@ -25,14 +25,22 @@ class Rover:
         self.speed_1 = 0
         self.speed_2 = 0
 
-        self._max_speed_1 = 7170
-        self._max_speed_2 = 7170
+        # self._max_speed_1 = 7170
+        # self._max_speed_2 = 7170
+        self._max_speed_1 = 3000
+        self._max_speed_2 = 3000
 
         self._smooth = 0.5
 
         threading.Thread(target=self.move_1).start()
         threading.Thread(target=self.move_2).start()
 
+    def emergency_stop(self):
+        self._max_speed_1 = 0
+        self._max_speed_2 = 0
+        self.stop()
+        self.motor_1.stop_heartbeat()
+        self.motor_2.stop_heartbeat()
 
     def move_1(self):
         try:
@@ -40,6 +48,7 @@ class Rover:
         except:
             pass
         _stopped_1 = False
+        send_count_1 = 50
         while True:
 
             if self._forward_1:
@@ -52,6 +61,8 @@ class Rover:
                             _stopped_1 = True
                             self.motor_1.stop_heartbeat()
                 else:
+                    if self.speed_1 < 0:
+                        self.speed_1 += self._smooth
                     _stopped_1 = False
                     if self.speed_1 > self._max_speed_1:
                         self.speed_1 = self._max_speed_1
@@ -65,11 +76,16 @@ class Rover:
                             _stopped_1 = True
                             self.motor_1.stop_heartbeat()
                 else:
+                    if self.speed_1 > 0:
+                        self.speed_1 -= self._smooth
                     _stopped_1 = False
                     if self.speed_1 < -self._max_speed_1:
                         self.speed_1 = -self._max_speed_1
-
-            self.motor_1.set_rpm(int(self.speed_1))
+            if send_count_1 == 50:
+                send_count_1 = 0
+                self.motor_1.set_rpm(int(self.speed_1))
+            else:
+                send_count_1 += 1
 
     def move_2(self):
         try:
@@ -78,6 +94,7 @@ class Rover:
             pass
 
         _stopped_2 = False
+        send_count_2 = 50
         while True:
 
             if self._forward_2:
@@ -90,6 +107,8 @@ class Rover:
                             _stopped_2 = True
                             self.motor_2.stop_heartbeat()
                 else:
+                    if self.speed_2 < 0:
+                        self.speed_2 += self._smooth
                     _stopped_2 = False
                     if self.speed_2 > self._max_speed_2:
                         self.speed_2 = self._max_speed_2
@@ -103,11 +122,17 @@ class Rover:
                             _stopped_2 = True
                             self.motor_1.stop_heartbeat()
                 else:
+                    if self.speed_2 > 0:
+                        # print('Тормоз 2')
+                        self.speed_2 -= self._smooth
                     _stopped_2 = False
                     if self.speed_2 < -self._max_speed_2:
                         self.speed_2 = -self._max_speed_2
-
-            self.motor_2.set_rpm(int(self.speed_2))
+            if send_count_2 == 50:
+                send_count_2 = 0
+                self.motor_2.set_rpm(int(self.speed_2))
+            else:
+                send_count_2 += 1
 
 
     def stop(self):

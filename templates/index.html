@@ -135,6 +135,7 @@
             position: relative;
             display: inline-block;
             width: 60px;
+            user-select: none;
             height: 34px;
             margin: 20px;
         }
@@ -190,6 +191,7 @@
             letter-spacing: 2px;
             text-align: center;
             margin: 0;
+            user-select: none;
             font-family: 'jost';
             color: #333;
             font-size: 20px;
@@ -201,6 +203,7 @@
             font-family: 'jost';
             font-size: 20px;
             margin: 0;
+            user-select: none;
             padding: 65.5px 50.15px;
             letter-spacing: 2px;
             color: #fff;
@@ -379,8 +382,21 @@
             } else if (event.type === 'mouseup' || event.type === 'touchend') {
                 sendCommand(command);
                 clearMovement();
+            } else if (event.type === 'change'){
+                const command = event.target.checked ? 'автопилот_вкл' : 'автопилот_выкл';
+                sendCommand(command);
             }
         }
+        window.addEventListener('blur', function() {
+            sendCommand('стоп')
+            console.log('blur')
+        })
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                sendCommand('стоп')
+                console.log('visibilitychange')
+            }
+        })
     </script>
 </head>
 <body class="body">
@@ -425,41 +441,25 @@
             <div class="switch-container">
                 <h2 class="switch-title">АВТОПИЛОТ</h2>
                 <label class="toggle-switch">
-                    <input type="checkbox">
+                    <input type="checkbox" name="autoPilot"
+                           onchange="handleButtonEvent(event)">
                     <span class="slider"></span>
                 </label>
             </div>
             <button class="stop-button"
-                onclick = "StopFunction()"
-                    }
+                onmousedown ="handleButtonEvent(event, 'СУПЕР СТОП')"
             >СТОП</button>
         </div>
     </main>
-    <div class="webcam" id="webcam-block">
-        <video id="webcam" class="webcam-image" autoplay playsinline></video>
-        <script>
-            // Получение доступа к веб-камере
-            async function startWebcam() {
-                const constraints = {
-                    video: true
-                };
 
-                try {
-                    const stream = await navigator.mediaDevices.getUserMedia(constraints);
-                    const videoElement = document.getElementById('webcam');
-                    videoElement.srcObject = stream;
-                } catch (error) {
-                    console.error('Ошибка доступа к веб-камере:', error);
-                }
-            }
-
-            // Запуск функции при загрузке страницы
-            window.addEventListener('load', startWebcam);
-        </script>
+    <div class="webcam active-video" id="webcam-block">
+    <img src="{{ url_for('video_feed') }}">
     </div>
+
     <div class="map" id="map-block" style="overflow:hidden;"><a href="https://yandex.ru/maps/org/npp_sputnik/132537694157/?utm_medium=mapframe&utm_source=maps" style="color:#eee;font-size:12px;position:absolute;top:0px;">Нпп-спутник</a><a href="https://yandex.ru/maps/11147/engels/category/agricultural_machinery_equipment/184106620/?utm_medium=mapframe&utm_source=maps" style="color:#eee;font-size:12px;position:absolute;top:14px;">Сельскохозяйственная техника, оборудование в Энгельсе</a><iframe src="https://yandex.ru/map-widget/v1/?ll=46.147521%2C51.475409&mode=search&oid=132537694157&ol=biz&z=12.28" width="100%" height="1080px" frameborder="1" allowfullscreen="true"></iframe></div>
     <div class="radio">
         <div class="radio-container">
+            <label class="radio-label">
             <label class="radio-label">
                 <input type="radio" name="option" value="1">
                 <span class="custom-radio"></span>

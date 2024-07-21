@@ -1,6 +1,9 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, Response
 from datetime import datetime
-_test = True
+from cam_test import Cam_3d
+import numpy as np
+import cv2
+_test = False
 if not _test:
     import use_rover
 
@@ -12,14 +15,30 @@ liquid_level = "50%"
 battery_level = "87%"
 
 
+def gen_frames():
+    global camera
+    try:
+        color_frame = camera.get_frame()
+        img = np.asanyarray(color_frame.get_data())
+        ret, buffer = cv2.imencode('.jpg', img)
+        frame = buffer.tobytes()
+        return (b'--frame\r\n'
+               b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
+
 @app.route('/')
 def index():
     return render_template('index.html')
 
+@app.route('/video_feed')
+def video_feed():
+    return Response(gen_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
 
 @app.route('/control', methods=['POST'])
 def control():
-    global current_location, liquid_level, battery_level, rover
+    global current_location, liquid_level, battery_level, rover, camera
     command = request.form['command']
 
     # Эмуляция управления вместо использования GPIO
@@ -27,6 +46,14 @@ def control():
 
     # Обновление состояния (пример логики, заменить на реальную)
     if not _test:
+        if command == 'СУПЕР СТОП':
+            rover.emergency_stop()
+        if command == 'автопилот_вкл':
+            camera.start_auto()
+        else:
+            camera.stop_auto()
+        if command == 'автопилот_выкл':
+            camera.stop_auto()
         if command == 'стоп':
             rover.stop()
         if command == 'вперед':
@@ -49,4 +76,5 @@ def control():
 if __name__ == '__main__':
     if not _test:
         rover = use_rover.Rover()
+        camera = Cam_3d(_show=True, _show_color=True, rover= rover, _with_rover=True)
     app.run(host='0.0.0.0', port=5000)
