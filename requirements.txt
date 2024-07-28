@@ -1,0 +1,10 @@
+setuptools
+wheel
+scikit-build
+pyserial
+opencv-python
+pycrc
+pyvesc @ git+https://github.com/LiamBindle/PyVESC.git
+pyrealsense2
+scikit-learn
+flask

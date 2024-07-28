@@ -1,0 +1,56 @@
+import cv2
+from time import sleep
+import os
+import numpy as np
+from ML import start_ML
+from skimage import feature
+
+
+rev_dict = {
+    '0':['1', '2', '3']
+}
+dir_start = 'data/images/'
+
+for i, name in enumerate(os.listdir(dir_start)):
+    print(name)
+
+    dir = 'data/ML/' + name + '/'
+    if not os.path.exists(dir):
+        os.makedirs(dir)
+
+    path = dir_start + name + '/'
+    files = os.listdir(path)
+    X = []
+    y = []
+    for i in files:
+        image = cv2.imread(path + i)
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        image = cv2.resize(image, (128, 128))
+        hog = feature.hog(image, orientations=9,
+                                   pixels_per_cell=(8, 8), cells_per_block=(2, 2),
+                                   block_norm='L2-Hys', visualize=False, transform_sqrt=True)
+        X += [hog]
+
+    y += [0] * len(files)
+
+
+    for ind, j in enumerate(rev_dict[name]):
+        path_rev = dir_start + j + '/'
+        files_rev = os.listdir(path_rev)
+        for i in files_rev:
+            image = cv2.imread(path_rev + i)
+            image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+            image = cv2.resize(image, (128, 128))
+            hog = feature.hog(image, orientations=9,
+                                       pixels_per_cell=(8, 8), cells_per_block=(2, 2),
+                                       block_norm='L2-Hys', visualize=False, transform_sqrt=True)
+            X += [hog]
+        y += [ind+1] * len(files_rev)
+
+    X = np.array(X)
+    np.save(dir + 'X.npy', X)
+    y = np.array(y)
+    np.save(dir + 'y.npy', y)
+
+print('...ML...')
+start_ML()
