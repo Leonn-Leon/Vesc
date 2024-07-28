@@ -19,15 +19,23 @@ class Cam_3d():
         self._show_color = _show_color
 
 
-        self.up_line = 220
-        self.down_line = 330
+        self.up_line = 280
+        self.down_line = 370
 
-        self.left_line = 320-120
-        self.right_line = 320+120
+        self.left_line = 320-50
+        self.right_line = 320+50
 
-        self._distance = 930
+        self.forward_left_line = 320 - 160
+        self.forward_right_line = 320 + 160
+
+        self._distance = 1000
         self.shut_down = False
         self.frame = np.zeros((640, 480))
+        try:
+            self.cam_open()
+        except Exception as exc:
+            print('Камеру НЕ подключу', exc)
+            pass
 
     def cam_open(self):
         self.dc = DepthCamera()
@@ -43,11 +51,6 @@ class Cam_3d():
 
     def start_auto(self):
         print('Run!')
-        try:
-            self.cam_open()
-        except Exception as exc:
-            print('Камеру НЕ подключу', exc)
-            pass
         self.shut_down = False
         self.cam_tread = threading.Thread(target=self.camera)
         self.cam_tread.start()
@@ -66,14 +69,15 @@ class Cam_3d():
         return self.frame
 
     def camera(self):
-        threshold_down = 3000
-        threshold_up = 5000
+        threshold_down = 20000
+        threshold_up = 65000
         last_command = ''
         command = ''
-        fartherest_points = [[0, 0]]
+        direction_points = [0]
         send_command_period = 1
         send_command_count = send_command_period
-        not_forward_count = 100
+        not_forward_count = 5
+        center_shift = 0
         while True:
             if self.shut_down:
                 break
@@ -93,40 +97,55 @@ class Cam_3d():
                     cv2.line(color_frame, (0, self.down_line), (640, self.down_line), (0, 0, 255), 3)
                     # cv2.line(color_frame, (80, 0), (80, 480), (0, 0, 255), 3)
                     # cv2.line(color_frame, (640-80, 0), (640-80, 480), (0, 0, 255), 3)
-            goal_depth = depth_frame[self.up_line:self.down_line, 20:]
-            goal_depth[goal_depth > 12000] = 0
-            fartherest_value = goal_depth.max()
-            direction_line = np.argmax(goal_depth.mean(axis=0))+20
-            maxxs = np.where(goal_depth == fartherest_value)
+            goal_depth = depth_frame[self.up_line:self.down_line, 40:-40]
+            # goal_depth[goal_depth > 12000] = 0
+            # fartherest_value = goal_depth.max()
+            _hist = goal_depth.mean(axis=0)
+            direction_line = np.argmax(_hist)+40
+            # direction_line = (np.argmin(_hist[self.forward_right_line:])+self.forward_right_line+20 + np.argmin(_hist[:self.forward_left_line]))/2
+            # maxxs = np.where(goal_depth == fartherest_value)
             goal_depth[goal_depth == 0] = 65000
             nearest_value = goal_depth.min()
             minns = np.where(goal_depth == nearest_value)
-            nearest_point = [minns[1][0]+20, minns[0][0] + self.up_line]
-            fartherest_point = [maxxs[1][0]+20, maxxs[0][0] + self.up_line]
-            fartherest_points = fartherest_points[-40:] + [fartherest_point]
+            nearest_point = [minns[1][0]+40, minns[0][0] + self.up_line]
+            # fartherest_point = [maxxs[1][0]+20, maxxs[0][0] + self.up_line]
+            # direction_points = direction_points[-40:] + [direction_line]
+            # direction_line = np.array(direction_points).mean()
+            # print(direction_line)
             if self._show:
-                point = np.array(fartherest_points).mean(axis=0)
-                point = int(point[0]), int(point[1])
                 if self._show_color:
-                    cv2.circle(color_frame, (point), 15, (255, 0, 0), 5)
+                    # cv2.circle(color_frame, (point), 15, (255, 0, 0), 5)
                     cv2.circle(color_frame, (nearest_point), 15, (0, 0, 255), 5)
                     cv2.line(color_frame, (direction_line, 0), (direction_line, 480), (0, 0, 255), 3)
                 else:
-                    cv2.circle(depth_frame_out, (point), 15, (0, 0, 0), 5)
+                    cv2.line(depth_frame_out, (direction_line, 0), (direction_line, 480), (0, 0, 255), 3)
             # print(direction_line, nearest_point)
             if nearest_value < self._distance:
                 if last_command != 'STOP':
                     command = 'STOP'
-            if (nearest_value > self._distance and direction_line < self.left_line) or (direction_line < nearest_point[0] and command == 'STOP'):
-                if last_command != 'Vlevo':
-                    command = 'Vlevo'
-            elif nearest_value > self._distance and direction_line > self.right_line or (direction_line > nearest_point[0] and command == 'STOP'):
-                if last_command != 'Vpravo':
-                    command = 'Vpravo'
-            elif fartherest_value > self._distance and direction_line > self.left_line and direction_line < self.right_line:
+            else:
+                center_shift -= 1
+                if center_shift < 0:
+                    center_shift = 0
+
+            if nearest_value > self._distance and direction_line < self.left_line and center_shift == 0:
+                command = 'Vlevo'
+
+            if nearest_value > self._distance and direction_line > self.right_line and center_shift == 0:
+                command = 'Vpravo'
+
+            if direction_line < nearest_point[0] and command == 'STOP':
+                command = 'Vlevo'
+                center_shift = 50
+
+            if direction_line > nearest_point[0] and command == 'STOP':
+                command = 'Vpravo'
+                center_shift = 50
+
+            if nearest_value > self._distance and direction_line > self.forward_left_line and direction_line < self.forward_right_line:
                 if last_command != 'Vpered':
                     command = 'Vpered'
-                    not_forward_count = 100
+                not_forward_count = 5
 
             if last_command != command:
                 send_command_count -= 1
@@ -136,7 +155,9 @@ class Cam_3d():
                     if command != 'Vpered':
                         not_forward_count -= 1
                         if not_forward_count <= 0:
+                            not_forward_count = 0
                             command = 'STOP'
+                            last_command = 'STOP'
                     if self._with_rover:
                         self.send_command(command)
                     print(command)
@@ -154,8 +175,7 @@ class Cam_3d():
                 k = cv2.waitKey(1)
                 if k == ord('q'):
                     break
-
-        self.dc.release()
+        # self.dc.release()
 
 if __name__ == '__main__':
     Cam_3d(_show=True, _show_color=True, rover=None, _with_rover=False).start_auto()

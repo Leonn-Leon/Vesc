@@ -11,12 +11,12 @@ class Rover:
 
     def __init__(self):
         serials = fs.get_serials()
-        serial_port_1 = serials[0]
-        serial_port_2 = serials[1]
+        serial_port_1 = serials[1]
+        serial_port_2 = serials[0]
         self._forward_1 = True
         self._stop_1 = True
         self.motor_1 = VESC(serial_port=serial_port_1, timeout=0.5)
-        time.sleep(1)
+        # time.sleep(1)
 
         self._forward_2 = True
         self._stop_2 = True
@@ -27,8 +27,8 @@ class Rover:
 
         # self._max_speed_1 = 7170
         # self._max_speed_2 = 7170
-        self._max_speed_1 = 3000
-        self._max_speed_2 = 3000
+        self._max_speed_1 = 5000
+        self._max_speed_2 = 5000
 
         self._smooth = 0.5
 
@@ -41,6 +41,10 @@ class Rover:
         self.stop()
         self.motor_1.stop_heartbeat()
         self.motor_2.stop_heartbeat()
+
+    def set_max_value(self, speed):
+        self._max_speed_1 = speed
+        self._max_speed_2 = speed
 
     def move_1(self):
         try:
