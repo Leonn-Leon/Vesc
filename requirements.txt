@@ -9,3 +9,5 @@ pyrealsense2
 scikit-learn
 flask
 scikit-image
+torch
+torchvision
