@@ -3,7 +3,7 @@ from datetime import datetime
 from cam_test import Cam_3d
 import numpy as np
 import cv2
-_test = False
+_test = True
 if not _test:
     import use_rover
 

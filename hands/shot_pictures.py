@@ -4,7 +4,7 @@ import os
 import numpy as np
 from realsense_depth import *
 
-names = ['0', '1', '2', '3']
+names = ['follow', 'stop', 'base', 'no_command']
 inds = []
 directory = 'data/images/'
 
@@ -30,9 +30,9 @@ while True:
         continue
     # sleep(0.005)
     skip = 0
-    depth_frame[depth_frame > 6000] = 6000
-    depth_frame[depth_frame < 500] = 0
-    cv2.imshow('video', depth_frame)
+    #depth_frame[depth_frame > 6000] = 6000
+    #depth_frame[depth_frame < 500] = 0
+    cv2.imshow('video', color_frame)
 
     k = cv2.waitKey(1)
     if k == ord('q'):
@@ -42,7 +42,8 @@ while True:
     elif k != -1:
         k = int(k) - 48
         clas = names[k] + '/'
-        cv2.imwrite(directory + clas + str(inds[k]) + '.png', depth_frame)
+        np.save(directory + clas + str(inds[k]) + '.npy', color_frame)
+       # cv2.imwrite(directory + clas + str(inds[k]) + '.png', depth_frame)
         print(names[k])
         inds[k] += 1
 
