@@ -10,7 +10,7 @@ def start_ML():
     if 'models' in files:
         files.remove('models')
     else:
-        mkdir('data/ML/models')
+        mkdir('models')
     for i in files:
         X = np.load('data/ML/' + i + '/X.npy')
         y = np.load('data/ML/' + i + '/y.npy')
@@ -20,7 +20,7 @@ def start_ML():
         # else:
         #     model = SVC(probability=True)
         model.fit(X, y)
-        with open('data/ML/models/' + i + '.pkl', 'wb') as file:
+        with open('models/' + i + '.pkl', 'wb') as file:
             dump(model, file)
 
 if __name__ == '__main__':

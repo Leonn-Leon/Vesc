@@ -12,3 +12,4 @@ flask
 scikit-image
 torch
 torchvision
+ultralytics

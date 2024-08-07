@@ -27,6 +27,8 @@ while True:
         for box in boxes:
             b = box.xyxy[0]  # get box coordinates in (left, top, right, bottom) format
             c = box.cls
+            if c == 0:
+                print(b, color_frame.shape)
             annotator.box_label(b, _model.names[int(c)])
     img = annotator.result()
 
