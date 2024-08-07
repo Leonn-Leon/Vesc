@@ -1,0 +1,7 @@
+path: /storage/vskovoroda/Grape/human_and_hands/hand_dataset/
+train: images/train
+val: images/validation
+test: images/test
+names:
+  0: hand
+  1: person

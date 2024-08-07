@@ -11,7 +11,8 @@ rev_dict = {
 }
 dir_start = 'data/images/'
 
-for i, name in enumerate(os.listdir(dir_start)):
+# for i, name in enumerate(os.listdir(dir_start)):
+for i, name in enumerate(rev_dict.keys()):
     print(name)
 
     dir = 'data/ML/' + name + '/'
@@ -23,8 +24,9 @@ for i, name in enumerate(os.listdir(dir_start)):
     X = []
     y = []
     for i in files:
-        image = cv2.imread(path + i)
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        image = np.load(path + i)
+        # image = cv2.imread(path + i)
+        # image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         image = cv2.resize(image, (128, 128))
         hog = feature.hog(image, orientations=9,
                                    pixels_per_cell=(8, 8), cells_per_block=(2, 2),
@@ -38,8 +40,9 @@ for i, name in enumerate(os.listdir(dir_start)):
         path_rev = dir_start + j + '/'
         files_rev = os.listdir(path_rev)
         for i in files_rev:
-            image = cv2.imread(path_rev + i)
-            image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+            image = np.load(path + i)
+            # image = cv2.imread(path_rev + i)
+            # image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
             image = cv2.resize(image, (128, 128))
             hog = feature.hog(image, orientations=9,
                                        pixels_per_cell=(8, 8), cells_per_block=(2, 2),

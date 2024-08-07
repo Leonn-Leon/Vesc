@@ -7,4 +7,5 @@ pycrc
 pyvesc @ git+https://github.com/LiamBindle/PyVESC.git
 pyrealsense2
 scikit-learn
+scikit-image
 flask

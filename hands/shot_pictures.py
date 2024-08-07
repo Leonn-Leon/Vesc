@@ -30,8 +30,8 @@ while True:
         continue
     # sleep(0.005)
     skip = 0
-    depth_frame[depth_frame > 6000] = 6000
-    depth_frame[depth_frame < 500] = 0
+    # depth_frame[depth_frame > 6000] = 6000
+    # depth_frame[depth_frame < 500] = 0
     cv2.imshow('video', depth_frame)
 
     k = cv2.waitKey(1)
@@ -42,7 +42,8 @@ while True:
     elif k != -1:
         k = int(k) - 48
         clas = names[k] + '/'
-        cv2.imwrite(directory + clas + str(inds[k]) + '.png', depth_frame)
+        np.save(directory + clas + str(inds[k]) + '.npy', depth_frame)
+        # cv2.imwrite(directory + clas + str(inds[k]) + '.png', depth_frame)
         print(names[k])
         inds[k] += 1
 

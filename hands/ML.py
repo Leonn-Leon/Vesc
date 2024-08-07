@@ -16,7 +16,7 @@ def start_ML():
         y = np.load('data/ML/' + i + '/y.npy')
         print(i)
         # if y.max() > 1:
-        model = LinearSVC(multi_class='crammer_singer')
+        model = LinearSVC()
         # else:
         #     model = SVC(probability=True)
         model.fit(X, y)
