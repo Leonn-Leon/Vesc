@@ -5,13 +5,11 @@ import numpy as np
 from ML import start_ML
 from skimage import feature
 
-
 rev_dict = {
-    '0':['1', '2', '3']
+    'follow':['stop', 'base', 'no_command']
 }
 dir_start = 'data/images/'
 
-# for i, name in enumerate(os.listdir(dir_start)):
 for i, name in enumerate(rev_dict.keys()):
     print(name)
 
@@ -25,9 +23,9 @@ for i, name in enumerate(rev_dict.keys()):
     y = []
     for i in files:
         image = np.load(path + i)
-        # image = cv2.imread(path + i)
-        # image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        image = cv2.resize(image, (128, 128))
+        #image = cv2.imread(path + i)
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        image = cv2.resize(image, (512, 512))
         hog = feature.hog(image, orientations=9,
                                    pixels_per_cell=(8, 8), cells_per_block=(2, 2),
                                    block_norm='L2-Hys', visualize=False, transform_sqrt=True)
@@ -40,10 +38,10 @@ for i, name in enumerate(rev_dict.keys()):
         path_rev = dir_start + j + '/'
         files_rev = os.listdir(path_rev)
         for i in files_rev:
-            image = np.load(path + i)
-            # image = cv2.imread(path_rev + i)
-            # image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-            image = cv2.resize(image, (128, 128))
+            image = np.load(path_rev + i)
+            #image = cv2.imread(path_rev + i)
+            image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+            image = cv2.resize(image, (512, 512))
             hog = feature.hog(image, orientations=9,
                                        pixels_per_cell=(8, 8), cells_per_block=(2, 2),
                                        block_norm='L2-Hys', visualize=False, transform_sqrt=True)
