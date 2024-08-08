@@ -9,14 +9,14 @@ def start_ML():
     files = listdir('data/ML')
     if 'models' in files:
         files.remove('models')
-    else:
+    if 'models' not in listdir():
         mkdir('models')
     for i in files:
         X = np.load('data/ML/' + i + '/X.npy')
         y = np.load('data/ML/' + i + '/y.npy')
         print(i)
         # if y.max() > 1:
-        model = LinearSVC()
+        model = SVC()
         # else:
         #     model = SVC(probability=True)
         model.fit(X, y)

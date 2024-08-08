@@ -20,25 +20,31 @@ for i in names:
     if not os.path.exists(directory+i):
         os.makedirs(directory+i)
 
-dc = DepthCamera()
+real_sense = False
+if real_sense:
+    dc = DepthCamera()
+else:
+    cap = cv2.VideoCapture(0)
 
 skip = 0
 for ind, i in enumerate(names):
     print(i + f' [{ind}]')
 
-_model = YOLO('hands/models/best.pt')
+_model = YOLO('models/best.pt')
 
 while True:
-    # ret, frame = cap.read()
-    ret, depth_frame, color_frame = dc.get_frame()
+    if real_sense:
+        ret, depth_frame, color_frame = dc.get_frame()
+    else:
+        ret, color_frame = cap.read()
     skip += 1
-    if skip < 7:
+    if skip < 5:
         continue
 
     results = _model.predict(color_frame, verbose=False, conf=0.3)
     hand_box = []
     for r in results:
-        annotator = Annotator(color_frame)
+        annotator = Annotator(color_frame.copy())
         boxes = r.boxes
         for box in boxes:
             b = box.xyxy[0]  # get box coordinates in (left, top, right, bottom) format
@@ -49,7 +55,7 @@ while True:
     img = annotator.result()
 
     skip = 0
-    cv2.imshow('video', color_frame)
+    cv2.imshow('video', img)
 
     k = cv2.waitKey(1)
     if k == ord('q'):
@@ -60,10 +66,15 @@ while True:
         k = int(k) - 48
         clas = names[k] + '/'
         # np.save(directory + clas + str(inds[k]) + '.npy', color_frame)
+        hand_box = [int(i) for i in hand_box]
+        print(hand_box)
         hand = color_frame[hand_box[1]:hand_box[3], hand_box[0]:hand_box[2]]
         cv2.imwrite(directory + clas + str(inds[k]) + '.png', hand)
         print(names[k])
         inds[k] += 1
 
-dc.release()
+if real_sense:
+    dc.release()
+else:
+    cap.release()
 cv2.destroyAllWindows()

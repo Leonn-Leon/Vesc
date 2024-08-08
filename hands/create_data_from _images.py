@@ -1,5 +1,4 @@
 import cv2
-from time import sleep
 import os
 import numpy as np
 from ML import start_ML
