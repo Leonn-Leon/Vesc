@@ -30,7 +30,7 @@ skip = 0
 for ind, i in enumerate(names):
     print(i + f' [{ind}]')
 
-_model = YOLO('models/best.pt')
+_model = YOLO('models/best_old.pt')
 
 while True:
     if real_sense:
