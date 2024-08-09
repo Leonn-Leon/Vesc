@@ -49,7 +49,7 @@ def train_YOLO():
                         min_zoom=1.0,
                         max_zoom=1.1,
                         max_lighting=0.2,
-                        max_warp=0.2,
+                        max_warp=0.1,
                         p_affine=0.75,
                         p_lighting=0.75,
                         xtra_tfms=None,
@@ -64,7 +64,7 @@ def train_YOLO():
     dls = db.dataloaders(path, bs=32, num_workers=0)
     dls.show_batch()
     learn = vision_learner(dls, mobilenet_v3_small, metrics=accuracy)
-    learn.fine_tune(350)
+    learn.fine_tune(500)
     learn.save('follow', with_opt=False)
     model_architecture = learn.model
     model_scripted = torch.jit.script(model_architecture)

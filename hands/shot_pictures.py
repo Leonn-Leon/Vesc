@@ -12,7 +12,11 @@ directory = 'data/images/'
 if not os.path.exists(directory):
     os.makedirs(directory)
 
-inds = np.arange(len(names))
+ind = []
+for i in names:
+    l = [int(i[:-4]) for i in os.listdir(directory + i) if i[:-4].isnumeric()]
+    inds += [sorted(l)[-1]]
+
 print(names)
 print(inds)
 

@@ -1,13 +1,9 @@
 import cv2
-import numpy as np
-from skimage import feature
 from realsense_depth import *
 from ultralytics import YOLO
 from ultralytics.utils.plotting import Annotator
-import pickle
 import torch
 from torchvision import transforms
-from matplotlib import pyplot as plt
 
 _model = YOLO('hands/models/best.pt')
 
@@ -24,6 +20,7 @@ print("Модельки Открыты!")
 names = ['base', 'follow', 'no_command', 'stop']
 
 real_sense = True
+_show = True
 if real_sense:
     dc = DepthCamera()
 else:
@@ -45,14 +42,15 @@ while True:
         continue
 
     skip += 1
-    if skip < 5:
+    if skip < 3:
         continue
     skip = 0
 
     results = _model.predict(color_frame, verbose=False)
     hand_box = [0,0,0,0,0]
     for r in results:
-        annotator = Annotator(color_frame.copy())
+        if _show:
+            annotator = Annotator(color_frame.copy())
         boxes = r.boxes
         for box in boxes:
             b = box.xyxy[0]  # get box coordinates in (left, top, right, bottom) format
@@ -62,14 +60,17 @@ while True:
                 if hand_box[4] < _square:
                     hand_box = [int(i) for i in b] + [_square]
                     # print(hand_box)
-            annotator.box_label(b, _model.names[int(c)])
-
-    img = annotator.result()
-    image = np.zeros((256, 256))
+            if _show:
+                annotator.box_label(b, _model.names[int(c)])
+    if _show:
+        img = annotator.result()
     if hand_box[4] > 100:
         image = color_frame[hand_box[1]:hand_box[3], hand_box[0]:hand_box[2]]
         image = cv2.resize(image, (256, 256))
-        tens = torch.from_numpy(image[None, :, :] / 255).permute(0, 3, 1, 2)
+        if real_sense:
+            tens = torch.from_numpy(image[None, ...] / 255).permute(0, 3, 1, 2)
+        else:
+            tens = torch.from_numpy(image[None, :, :, ::-1] / 255).permute(0, 3, 1, 2)
         tens = norm_method(tens)
 
         if torch.cuda.is_available():
@@ -80,15 +81,16 @@ while True:
             break
         with torch.no_grad():
             output = hand_model(input_batch).cpu()[0]
-        print(output)
+        # print(output)
         _command = names[np.argmax(output)]
 
-    cv2.imshow('YOLO Detection', img)
-    k = cv2.waitKey(1)
-    if k == ord('q'):
-        break
-    elif k == ord('p'):
-        cv2.waitKey(0)
+    if _show:
+        cv2.imshow('YOLO Detection', img)
+        k = cv2.waitKey(1)
+        if k == ord('q'):
+            break
+        elif k == ord('p'):
+            cv2.waitKey(0)
 
     if new_command == _command:
         confidence -= 1
