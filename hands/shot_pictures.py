@@ -30,7 +30,7 @@ skip = 0
 for ind, i in enumerate(names):
     print(i + f' [{ind}]')
 
-_model = YOLO('models/best_old.pt')
+_model = YOLO('models/best.pt')
 
 while True:
     if real_sense:
@@ -40,6 +40,7 @@ while True:
     skip += 1
     if skip < 5:
         continue
+    skip = 0
 
     results = _model.predict(color_frame, verbose=False, conf=0.3)
     hand_box = []
@@ -54,7 +55,7 @@ while True:
             annotator.box_label(b, _model.names[int(c)])
     img = annotator.result()
 
-    skip = 0
+
     cv2.imshow('video', img)
 
     k = cv2.waitKey(1)
