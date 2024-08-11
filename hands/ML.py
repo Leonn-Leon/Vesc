@@ -40,7 +40,7 @@ def train_YOLO():
         get_items=get_image_files,
         splitter=RandomSplitter(valid_pct=0.0, seed=42),
         get_y=parent_label,
-        item_tfms=Resize(256),
+        item_tfms=Resize(128),
         batch_tfms=[Normalize.from_stats(*imagenet_stats),
                     *aug_transforms(mult=1.0,
                         do_flip=True,
@@ -55,7 +55,7 @@ def train_YOLO():
                         xtra_tfms=None,
                         size=None,
                         mode='bilinear',
-                        pad_mode='reflection',
+                        pad_mode='zeros',
                         align_corners=True,
                         batch=False,
                         min_scale=1.0)
@@ -64,14 +64,15 @@ def train_YOLO():
     dls = db.dataloaders(path, bs=32, num_workers=0)
     dls.show_batch()
     learn = vision_learner(dls, mobilenet_v3_small, metrics=accuracy)
-    learn.fine_tune(500)
-    learn.save('follow', with_opt=False)
+    learn.fine_tune(450)
+    learn.save('follow2', with_opt=False)
     model_architecture = learn.model
     model_scripted = torch.jit.script(model_architecture)
-    model_scripted.save('models/follow.pt')
+    model_scripted.save('models/follow2.pt')
 
 
 if __name__ == '__main__':
     # start_ML()
+    print('CUDA: ', torch.cuda.is_available())
     train_YOLO()
 #%%

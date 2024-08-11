@@ -1,0 +1,14 @@
+setuptools
+wheel
+scikit-build
+opencv-python
+pyrealsense2
+scikit-learn
+scikit-image
+flask
+scikit-image
+ultralytics
+--index-url https://download.pytorch.org/whl/cu121
+torch==2.3.1
+torchvision
+pytorch-lightning

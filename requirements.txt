@@ -10,7 +10,7 @@ scikit-learn
 scikit-image
 flask
 scikit-image
-torch==2.3.1
-torchvision==0.18.1
 ultralytics
-pickle5
+--index-url https://download.pytorch.org/whl/cu121
+torch==2.3.1
+torchvision

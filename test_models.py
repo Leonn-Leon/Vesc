@@ -4,12 +4,13 @@ from ultralytics import YOLO
 from ultralytics.utils.plotting import Annotator
 import torch
 from torchvision import transforms
+from torchvision.models import mobilenet_v3_small, resnet18
 
 _model = YOLO('hands/models/best.pt')
 
 model_path = 'hands/models/'
-hand_model = torch.jit.load(model_path+'follow.pt')
-hand_model.load_state_dict(torch.load(model_path+'follow.pth', map_location=torch.device('cuda' if torch.cuda.is_available() else 'cpu')))
+hand_model = torch.jit.load(model_path+'follow2.pt')
+hand_model.load_state_dict(torch.load(model_path+'follow2.pth'))
 hand_model.to('cuda')
 hand_model.eval()
 
@@ -19,7 +20,8 @@ print("Модельки Открыты!")
 
 names = ['base', 'follow', 'no_command', 'stop']
 
-real_sense = True
+
+real_sense = False
 _show = True
 if real_sense:
     dc = DepthCamera()
@@ -66,11 +68,11 @@ while True:
         img = annotator.result()
     if hand_box[4] > 100:
         image = color_frame[hand_box[1]:hand_box[3], hand_box[0]:hand_box[2]]
-        image = cv2.resize(image, (256, 256))
+        image = cv2.resize(image, (128, 128))
         if real_sense:
             tens = torch.from_numpy(image[None, ...] / 255).permute(0, 3, 1, 2)
         else:
-            tens = torch.from_numpy(image[None, :, :, ::-1] / 255).permute(0, 3, 1, 2)
+            tens = torch.from_numpy(image[None, :, :] / 255).permute(0, 3, 2, 1)
         tens = norm_method(tens)
 
         if torch.cuda.is_available():
@@ -81,8 +83,9 @@ while True:
             break
         with torch.no_grad():
             output = hand_model(input_batch).cpu()[0]
-        # print(output)
-        _command = names[np.argmax(output)]
+            # output = hand_model_2(input_batch).cpu()[0]
+        _command = names[int(output.argmax())]
+        # _command = targets[int(output.argmax())]
 
     if _show:
         cv2.imshow('YOLO Detection', img)
