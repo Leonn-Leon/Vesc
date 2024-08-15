@@ -2,12 +2,17 @@ import cv2
 import numpy as np
 import pyrealsense2 as rs
 from realsense_depth import *
+from ultralytics import YOLO
 import threading
 import sys
 
 
 class Cam_3d():
     def __init__(self, _show:bool = True, _show_color:bool = True, rover = None, _with_rover = True):
+
+        self._model = YOLO('hands/models/hands_only.pt')
+        self.autopilot_in = False
+
         self._with_rover = _with_rover
         if _with_rover:
             if not rover:
@@ -40,7 +45,13 @@ class Cam_3d():
     def cam_open(self):
         self.dc = DepthCamera()
 
-    def stop_auto(self):
+    def start_cam(self):
+        print('Run!')
+        self.shut_down = False
+        self.cam_tread = threading.Thread(target=self.camera)
+        self.cam_tread.start()
+
+    def stop_cam(self):
         print('STOP Auto!')
         self.shut_down = True
         self.rover.stop()
@@ -50,10 +61,11 @@ class Cam_3d():
             return
 
     def start_auto(self):
-        print('Run!')
-        self.shut_down = False
-        self.cam_tread = threading.Thread(target=self.camera)
-        self.cam_tread.start()
+        self.autopilot_in = True
+
+    def stop_auto(self):
+        self.rover.stop()
+        self.autopilot_in = False
 
     def send_command(self, comand):
         if comand == 'Vpered':
@@ -78,14 +90,50 @@ class Cam_3d():
         send_command_count = send_command_period
         not_forward_count = 5
         center_shift = 0
+
+        skip = 0
+
+        img = np.zeros((640, 640))
         while True:
             if self.shut_down:
                 break
             ret, depth_frame, color_frame = self.dc.get_frame()
 
             self.frame = color_frame
+
             if not ret:
                 continue
+
+            skip += 1
+            if skip == 3:
+                results = self._model.predict(color_frame, verbose=False)
+                skip = 0
+                hand_box = [0, 0, 0, 0, 0, 0]
+                for r in results:
+                    if self._show:
+                        annotator = Annotator(color_frame.copy())
+                    boxes = r.boxes
+                    for box in boxes:
+                        b = box.xyxy[0]  # get box coordinates in (left, top, right, bottom) format
+                        c = box.cls
+                        if c < 5:
+                            _square = (b[2] - b[0]) * (b[3] - b[1])
+                            if hand_box[4] < _square:
+                                hand_box = [int(i) for i in b] + [_square] + [int(c)]
+                                # print(hand_box)
+                        if _show:
+                            annotator.box_label(b, self._model.names[int(c)])
+                if self._show:
+                    img = annotator.result()
+                if hand_box[4] > 300:
+                    command = hand_box[5]
+                    print(self._model.names[hand_box[5]])
+                    if command == 0:
+                        self.start_auto()
+                    else:
+                        self.stop_auto()
+
+
             if self._show:
                 if not self._show_color:
                     depth_frame_out = depth_frame.copy()
@@ -158,7 +206,7 @@ class Cam_3d():
                             not_forward_count = 0
                             command = 'STOP'
                             last_command = 'STOP'
-                    if self._with_rover:
+                    if self._with_rover and self.autopilot_in:
                         self.send_command(command)
                     print(command)
             else:
@@ -167,7 +215,8 @@ class Cam_3d():
                 if self._show_color:
                     cv2.putText(color_frame, last_command, (200, 70), cv2.FONT_HERSHEY_SIMPLEX, 3,
                             (0, 255, 0), 3, 2)
-                    cv2.imshow('Color frame', color_frame)
+                    # cv2.imshow('Color frame', color_frame)
+                    cv2.imshow('Yolo out', img)
                 else:
                     cv2.imshow("depth frame", depth_frame_out)
             # Stop

@@ -72,7 +72,7 @@ while True:
         if real_sense:
             tens = torch.from_numpy(image[None, ...] / 255).permute(0, 3, 1, 2)
         else:
-            tens = torch.from_numpy(image[None, :, :] / 255).permute(0, 3, 2, 1)
+            tens = torch.from_numpy(image[None, ...] / 255).permute(0, 3, 2, 1)
         tens = norm_method(tens)
 
         if torch.cuda.is_available():

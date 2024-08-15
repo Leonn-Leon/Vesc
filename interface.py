@@ -3,7 +3,7 @@ from datetime import datetime
 from cam_test import Cam_3d
 import numpy as np
 import cv2
-_test = True
+_test = False
 if not _test:
     import use_rover
 
@@ -14,19 +14,6 @@ current_location = "1"
 liquid_level = "50%"
 battery_level = "87%"
 
-
-# def gen_frames():
-#     global camera
-#     while True:
-#         try:
-#             color_frame = camera.get_frame()
-#             # img = np.asanyarray(color_frame.get_data())
-#             ret, buffer = cv2.imencode('.jpg', color_frame)
-#             frame = buffer.tobytes()
-#             yield (b'--frame\r\n'
-#                    b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
-#         except Exception as e:
-#             print(f"An error occurred: {e}")
 
 
 @app.route('/')
@@ -50,7 +37,8 @@ def control():
         if command == 'СУПЕР СТОП':
             rover.emergency_stop()
         if command == 'автопилот_вкл':
-            camera.start_auto()
+            camera.start_cam()
+            # camera.start_auto()
         elif command.isdigit():
             rover.set_max_value(int(command))
         else:
@@ -59,6 +47,7 @@ def control():
 
         if command == 'автопилот_выкл':
             camera.stop_auto()
+            camera.stop_cam()
         if command == 'стоп':
             rover.stop()
         if command == 'вперед':
@@ -83,5 +72,5 @@ if __name__ == '__main__':
         rover = use_rover.Rover()
     else:
         rover = None
-    camera = Cam_3d(_show=False, _show_color=False, rover= rover, _with_rover=bool(rover))
+    camera = Cam_3d(_show=True, _show_color=True, rover= rover, _with_rover=bool(rover))
     app.run(host='0.0.0.0', port=5000)
