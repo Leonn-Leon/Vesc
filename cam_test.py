@@ -126,9 +126,9 @@ class Cam_3d():
                 if self._show:
                     img = annotator.result()
                 if hand_box[4] > 300:
-                    command = hand_box[5]
+                    hand_command = hand_box[5]
                     print(self._model.names[hand_box[5]])
-                    if command == 0:
+                    if hand_command in [0, 1, 2]:
                         self.start_auto()
                     else:
                         self.stop_auto()
