@@ -1,2 +1,4 @@
 from serial.tools import list_ports
-print(list_ports.comports())
+
+def get_serials():
+    return [i.split()[0] for i in list_ports.comports()]
