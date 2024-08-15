@@ -144,7 +144,7 @@ class Cam_3d():
                     if confidence == 0 and last_hand_command != hand_command:
                         last_hand_command = hand_command
                         print(self._model.names[hand_box[5]])
-                        if hand_command in [0, 1, 2]:
+                        if hand_command == 0:
                             self.start_auto()
                         else:
                             print("СТОП ПО РУКАМ")
@@ -229,7 +229,7 @@ class Cam_3d():
                             last_command = 'STOP'
                     if self._with_rover and self.autopilot_in:
                         self.send_command(command)
-                    print(command)
+                    print(command, self.autopilot_in)
             else:
                 send_command_count = send_command_period
             if self._show:
