@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 import pyrealsense2 as rs
 from realsense_depth import *
+from ultralytics.utils.plotting import Annotator
 from ultralytics import YOLO
 import threading
 import sys
@@ -119,10 +120,10 @@ class Cam_3d():
                 for r in results:
                     if self._show:
                         annotator = Annotator(color_frame.copy())
-                    boxes = r.boxes
+                    boxes = r.obb
                     for box in boxes:
                         b = box.xyxy[0]  # get box coordinates in (left, top, right, bottom) format
-                        c = box.cls
+                        c = box.cls.item()
                         if c < 5 or True:
                             _square = (b[2] - b[0]) * (b[3] - b[1])
                             if hand_box[4] < _square:
@@ -134,12 +135,6 @@ class Cam_3d():
                     img = annotator.result()
                 if hand_box[4] > 300:
                     hand_command = hand_box[5]
-                    print(self._model.names[hand_box[5]])
-                    if hand_command in [0, 1, 2]:
-                        self.start_auto()
-                    else:
-                        print("СТОП ПО РУКАМ")
-                        self.stop_auto()
 
                     if new_hand_command == hand_command:
                         confidence -= 1
@@ -148,7 +143,12 @@ class Cam_3d():
 
                     if confidence == 0 and last_hand_command != hand_command:
                         last_hand_command = hand_command
-                        print(hand_command)
+                        print(self._model.names[hand_box[5]])
+                        if hand_command in [0, 1, 2]:
+                            self.start_auto()
+                        else:
+                            print("СТОП ПО РУКАМ")
+                            self.stop_auto()
                         confidence = MAX_CONF
 
                     new_hand_command = hand_command
