@@ -80,12 +80,19 @@ class Cam_3d():
     def get_frame(self):
         return self.frame
 
+
     def camera(self):
         threshold_down = 20000
         threshold_up = 65000
         last_command = ''
         command = ''
-        direction_points = [0]
+
+        last_hand_command = ''
+        new_hand_command = ''
+        hand_command = ''
+        MAX_CONF = 3
+        confidence = MAX_CONF
+
         send_command_period = 1
         send_command_count = send_command_period
         not_forward_count = 5
@@ -116,7 +123,7 @@ class Cam_3d():
                     for box in boxes:
                         b = box.xyxy[0]  # get box coordinates in (left, top, right, bottom) format
                         c = box.cls
-                        if c < 5:
+                        if c < 5 or True:
                             _square = (b[2] - b[0]) * (b[3] - b[1])
                             if hand_box[4] < _square:
                                 hand_box = [int(i) for i in b] + [_square] + [int(c)]
@@ -131,7 +138,21 @@ class Cam_3d():
                     if hand_command in [0, 1, 2]:
                         self.start_auto()
                     else:
+                        print("СТОП ПО РУКАМ")
                         self.stop_auto()
+
+                    if new_hand_command == hand_command:
+                        confidence -= 1
+                    else:
+                        confidence = MAX_CONF
+
+                    if confidence == 0 and last_hand_command != hand_command:
+                        last_hand_command = hand_command
+                        print(hand_command)
+                        confidence = MAX_CONF
+
+                    new_hand_command = hand_command
+
 
 
             if self._show:
@@ -224,6 +245,7 @@ class Cam_3d():
                 k = cv2.waitKey(1)
                 if k == ord('q'):
                     break
+
         # self.dc.release()
 
 if __name__ == '__main__':
