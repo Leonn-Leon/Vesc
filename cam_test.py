@@ -2,7 +2,6 @@ import cv2
 import numpy as np
 import pyrealsense2 as rs
 from realsense_depth import *
-from ultralytics.utils.plotting import Annotator
 from ultralytics import YOLO
 import threading
 import sys
@@ -11,7 +10,7 @@ import sys
 class Cam_3d():
     def __init__(self, _show:bool = True, _show_color:bool = True, rover = None, _with_rover = True):
 
-        self._model = YOLO('hands/models/hands_only.pt')
+        self._model = YOLO('hands/models/hands_with_human_last_obb.pt')
         self.autopilot_in = False
 
         self._with_rover = _with_rover
@@ -34,7 +33,7 @@ class Cam_3d():
         self.forward_left_line = 320 - 160
         self.forward_right_line = 320 + 160
 
-        self._distance = 1000
+        self._distance = 700
         self.shut_down = False
         self.frame = np.zeros((640, 480))
         try:
@@ -81,23 +80,16 @@ class Cam_3d():
     def get_frame(self):
         return self.frame
 
-
     def camera(self):
         threshold_down = 20000
         threshold_up = 65000
         last_command = ''
         command = ''
-
-        last_hand_command = ''
-        new_hand_command = ''
-        hand_command = ''
-        MAX_CONF = 3
-        confidence = MAX_CONF
-
-        send_command_period = 1
-        send_command_count = send_command_period
-        not_forward_count = 5
-        center_shift = 0
+        direction_points = [0]
+        SEND_COMMAND_PERIOD_CONST = 1
+        send_command_count = SEND_COMMAND_PERIOD_CONST
+        not_forward_count = 5 # Счётчик как долго не двигаемся прямо, если долго не едем вперёд, значит тупик
+        center_shift = 0 # Для нормализации движения после объезда препятствий
 
         skip = 0
 
@@ -117,42 +109,37 @@ class Cam_3d():
                 results = self._model.predict(color_frame, verbose=False)
                 skip = 0
                 hand_box = [0, 0, 0, 0, 0, 0]
+                human_box = [0, 0, 0]
                 for r in results:
                     if self._show:
                         annotator = Annotator(color_frame.copy())
-                    boxes = r.obb
+                    boxes = r.boxes
                     for box in boxes:
                         b = box.xyxy[0]  # get box coordinates in (left, top, right, bottom) format
-                        c = box.cls.item()
-                        if c < 5 or True:
+                        c = box.cls
+                        if c < 5:
                             _square = (b[2] - b[0]) * (b[3] - b[1])
                             if hand_box[4] < _square:
                                 hand_box = [int(i) for i in b] + [_square] + [int(c)]
                                 # print(hand_box)
+                        else:
+                            _square = (b[2] - b[0]) * (b[3] - b[1])
+                            if human_box[2] < _square:
+                                # Сохраняем точку - середину нижней линии
+                                human_box = [(b[0]+b[2])/2, b[3]] + [_square]
                         if _show:
                             annotator.box_label(b, self._model.names[int(c)])
                 if self._show:
                     img = annotator.result()
                 if hand_box[4] > 300:
                     hand_command = hand_box[5]
-
-                    if new_hand_command == hand_command:
-                        confidence -= 1
-                    else:
-                        confidence = MAX_CONF
-
-                    if confidence == 0 and last_hand_command != hand_command:
-                        last_hand_command = hand_command
-                        print(self._model.names[hand_box[5]])
-                        if hand_command == 0:
-                            self.start_auto()
-                        else:
-                            print("СТОП ПО РУКАМ")
-                            self.stop_auto()
-                        confidence = MAX_CONF
-
-                    new_hand_command = hand_command
-
+                    print(self._model.names[hand_box[5]])
+                    if hand_command == 0:
+                        self.start_auto()
+                        print('Команда 1')
+                    elif hand_command == 4:
+                        print("Команда 2")
+                        self.stop_auto()
 
 
             if self._show:
@@ -171,6 +158,15 @@ class Cam_3d():
             # fartherest_value = goal_depth.max()
             _hist = goal_depth.mean(axis=0)
             direction_line = np.argmax(_hist)+40
+
+            ############################################
+            # Тут принимаем решение следовать за человеком
+            if hand_command == 0:
+                direction_line = human_box[1]
+            # TODO: Прибраться в говне этом
+            ############################################
+
+
             # direction_line = (np.argmin(_hist[self.forward_right_line:])+self.forward_right_line+20 + np.argmin(_hist[:self.forward_left_line]))/2
             # maxxs = np.where(goal_depth == fartherest_value)
             goal_depth[goal_depth == 0] = 65000
@@ -191,6 +187,7 @@ class Cam_3d():
             # print(direction_line, nearest_point)
             if nearest_value < self._distance:
                 if last_command != 'STOP':
+                    print("Слишком близко!!!!")
                     command = 'STOP'
             else:
                 center_shift -= 1
@@ -204,10 +201,12 @@ class Cam_3d():
                 command = 'Vpravo'
 
             if direction_line < nearest_point[0] and command == 'STOP':
+                # Если вперёд проехать не можем но нам нужно влево, то нужно повернуть влево
                 command = 'Vlevo'
                 center_shift = 50
 
             if direction_line > nearest_point[0] and command == 'STOP':
+                # Если вперёд проехать не можем но нам нужно вправо, то нужно повернуть вправо
                 command = 'Vpravo'
                 center_shift = 50
 
@@ -216,22 +215,27 @@ class Cam_3d():
                     command = 'Vpered'
                 not_forward_count = 5
 
-            if last_command != command:
+            if last_command != command: # Если уже отправляли, чтобы снова ту же команду не слать
                 send_command_count -= 1
                 if send_command_count == 0:
+                    # Это против эпилепсии робота, чтобы он вправо влево не шатался,
+                    # а поворачивался только если точно в этом уверен
                     last_command = command
-                    send_command_count = send_command_period
+                    send_command_count = SEND_COMMAND_PERIOD_CONST
                     if command != 'Vpered':
+                        # Если принял решение ехать не вперёд, то настараживаемся - не топчимся ли мы на месте
                         not_forward_count -= 1
                         if not_forward_count <= 0:
+                            # Если всё таки некуда ехать вперёд, то стопопримся до прояснения ситуации
+                            # TODO: Мэйби его разворчивать на 180 ?
                             not_forward_count = 0
                             command = 'STOP'
                             last_command = 'STOP'
                     if self._with_rover and self.autopilot_in:
                         self.send_command(command)
-                    print(command, self.autopilot_in)
+                    print(command)
             else:
-                send_command_count = send_command_period
+                send_command_count = SEND_COMMAND_PERIOD_CONST
             if self._show:
                 if self._show_color:
                     cv2.putText(color_frame, last_command, (200, 70), cv2.FONT_HERSHEY_SIMPLEX, 3,
@@ -245,8 +249,7 @@ class Cam_3d():
                 k = cv2.waitKey(1)
                 if k == ord('q'):
                     break
-
         # self.dc.release()
 
 if __name__ == '__main__':
-    Cam_3d(_show=True, _show_color=True, rover=None, _with_rover=False).start_auto()
+    Cam_3d(_show=True, _show_color=True, rover=None, _with_rover=False).start_cam()
