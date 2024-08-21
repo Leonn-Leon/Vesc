@@ -123,7 +123,7 @@ class Cam_3d():
                                 hand_box = [int(i) for i in b] + [_square] + [int(c)]
                                 # print(hand_box)
                         else:
-                            _square = (b[2] - b[0]) * (b[3] - b[1])
+                            _square = b[3]
                             if human_box[2] < _square:
                                 # Сохраняем точку - середину нижней линии
                                 human_box = [(b[0]+b[2])/2, b[3]] + [_square]
@@ -162,7 +162,7 @@ class Cam_3d():
             ############################################
             # Тут принимаем решение следовать за человеком
             if hand_command == 0:
-                direction_line = human_box[1]
+                direction_line = int(human_box[1])
             # TODO: Прибраться в говне этом
             ############################################
 
@@ -194,26 +194,29 @@ class Cam_3d():
                 if center_shift < 0:
                     center_shift = 0
 
-            if nearest_value > self._distance and direction_line < self.left_line and center_shift == 0:
-                command = 'Vlevo'
+            if direction_line != 0:
+                if nearest_value > self._distance and direction_line < self.left_line and center_shift == 0:
+                    command = 'Vlevo'
 
-            if nearest_value > self._distance and direction_line > self.right_line and center_shift == 0:
-                command = 'Vpravo'
+                if nearest_value > self._distance and direction_line > self.right_line and center_shift == 0:
+                    command = 'Vpravo'
 
-            if direction_line < nearest_point[0] and command == 'STOP':
-                # Если вперёд проехать не можем но нам нужно влево, то нужно повернуть влево
-                command = 'Vlevo'
-                center_shift = 50
+                if direction_line < nearest_point[0] and command == 'STOP':
+                    # Если вперёд проехать не можем но нам нужно влево, то нужно повернуть влево
+                    command = 'Vlevo'
+                    center_shift = 50
 
-            if direction_line > nearest_point[0] and command == 'STOP':
-                # Если вперёд проехать не можем но нам нужно вправо, то нужно повернуть вправо
-                command = 'Vpravo'
-                center_shift = 50
+                if direction_line > nearest_point[0] and command == 'STOP':
+                    # Если вперёд проехать не можем но нам нужно вправо, то нужно повернуть вправо
+                    command = 'Vpravo'
+                    center_shift = 50
 
-            if nearest_value > self._distance and direction_line > self.forward_left_line and direction_line < self.forward_right_line:
-                if last_command != 'Vpered':
-                    command = 'Vpered'
-                not_forward_count = 5
+                if nearest_value > self._distance and direction_line > self.forward_left_line and direction_line < self.forward_right_line:
+                    if last_command != 'Vpered':
+                        command = 'Vpered'
+                    not_forward_count = 5
+            else:
+                command = "STOP"
 
             if last_command != command: # Если уже отправляли, чтобы снова ту же команду не слать
                 send_command_count -= 1
