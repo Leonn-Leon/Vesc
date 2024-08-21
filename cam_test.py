@@ -85,7 +85,8 @@ class Cam_3d():
         threshold_down = 20000
         threshold_up = 65000
         last_command = ''
-        command = ''
+        command = ""
+        hand_command = ""
         direction_points = [0]
         SEND_COMMAND_PERIOD_CONST = 1
         send_command_count = SEND_COMMAND_PERIOD_CONST
@@ -128,7 +129,7 @@ class Cam_3d():
                             if human_box[2] < _square:
                                 # Сохраняем точку - середину нижней линии
                                 human_box = [(b[0]+b[2])/2, b[3]] + [_square]
-                        if _show:
+                        if self._show:
                             annotator.box_label(b, self._model.names[int(c)])
                 if self._show:
                     img = annotator.result()
@@ -196,10 +197,14 @@ class Cam_3d():
                     center_shift = 0
 
             if direction_line != 0:
-                if nearest_value > self._distance and direction_line < self.left_line and center_shift == 0:
+                # if nearest_value > self._distance and direction_line < self.left_line and center_shift == 0 and last_command == "Vlevo":
+                #     command = 'Vlevo'
+                if nearest_value > self._distance and direction_line < self.forward_left_line and center_shift == 0 and last_command != "Vlevo":
                     command = 'Vlevo'
 
-                if nearest_value > self._distance and direction_line > self.right_line and center_shift == 0:
+                # if nearest_value > self._distance and direction_line > self.right_line and center_shift == 0 and last_command == "Vpravo":
+                #     command = 'Vpravo'
+                if nearest_value > self._distance and direction_line > self.right_line and center_shift == 0 and last_command != "Vpravo":
                     command = 'Vpravo'
 
                 if direction_line < nearest_point[0] and command == 'STOP':
@@ -212,9 +217,11 @@ class Cam_3d():
                     command = 'Vpravo'
                     center_shift = 50
 
-                if nearest_value > self._distance and direction_line > self.forward_left_line and direction_line < self.forward_right_line:
-                    if last_command != 'Vpered':
-                        command = 'Vpered'
+                # if nearest_value > self._distance and direction_line > self.forward_left_line and direction_line < self.forward_right_line and last_command == "Vpered":
+                #     command = 'Vpered'
+                #     not_forward_count = 5
+                if nearest_value > self._distance and direction_line > self.left_line and direction_line < self.right_line and last_command != "Vpered":
+                    command = 'Vpered'
                     not_forward_count = 5
             else:
                 command = "STOP"
