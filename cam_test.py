@@ -3,6 +3,7 @@ import numpy as np
 import pyrealsense2 as rs
 from realsense_depth import *
 from ultralytics import YOLO
+from ultralytics.utils.plotting import Annotator
 import threading
 import sys
 
