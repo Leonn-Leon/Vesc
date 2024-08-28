@@ -37,18 +37,18 @@ class Cam_3d():
         self._distance = 700
         self.shut_down = False
         self.frame = np.zeros((640, 480))
+
+    def cam_open(self):
         try:
-            self.cam_open()
+            self.dc = DepthCamera()
         except Exception as exc:
             print('Камеру НЕ подключу', exc)
             pass
 
-    def cam_open(self):
-        self.dc = DepthCamera()
-
     def start_cam(self):
         print('Run!')
         self.shut_down = False
+        self.cam_open()
         self.cam_tread = threading.Thread(target=self.camera)
         self.cam_tread.start()
 
@@ -59,6 +59,7 @@ class Cam_3d():
         try:
             self.cam_tread.join()
         except:
+            print("Ошибка при закрытии потока")
             return
 
     def start_auto(self):
@@ -260,7 +261,7 @@ class Cam_3d():
                 k = cv2.waitKey(1)
                 if k == ord('q'):
                     break
-        # self.dc.release()
+        self.dc.release()
 
 if __name__ == '__main__':
     Cam_3d(_show=True, _show_color=True, rover=None, _with_rover=False).start_cam()
