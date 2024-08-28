@@ -1,3 +1,5 @@
+import time
+
 import cv2
 import numpy as np
 import pyrealsense2 as rs
@@ -56,6 +58,7 @@ class Cam_3d():
         print('STOP Auto!')
         self.shut_down = True
         self.rover.stop()
+        time.sleep(0.1)
         try:
             self.cam_tread.join()
         except:
